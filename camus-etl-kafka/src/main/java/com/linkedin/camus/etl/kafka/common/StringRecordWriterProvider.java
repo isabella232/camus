@@ -5,8 +5,12 @@ import com.linkedin.camus.etl.IEtlKey;
 import com.linkedin.camus.etl.RecordWriterProvider;
 import com.linkedin.camus.etl.kafka.mapred.EtlMultiOutputFormat;
 import java.io.IOException;
+
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
@@ -16,7 +20,7 @@ import org.apache.log4j.Logger;
 
 /**
  * Provides a RecordWriter that uses FSDataOutputStream to write
- * a String record as bytes to HDFS without any reformatting or compession.
+ * a String record as bytes to HDFS using gzip compession.
  */
 public class StringRecordWriterProvider implements RecordWriterProvider {
     public static final String ETL_OUTPUT_RECORD_DELIMITER = "etl.output.record.delimiter";
@@ -29,12 +33,12 @@ public class StringRecordWriterProvider implements RecordWriterProvider {
     // init(JobContext context) method signature that EtlMultiOutputFormat would always call.
     @Override
     public String getFilenameExtension() {
-        return "";
+        return ".gz";
     }
 
     @Override
     public RecordWriter<IEtlKey, CamusWrapper> getDataRecordWriter(
-            TaskAttemptContext  context,
+            final TaskAttemptContext  context,
             String              fileName,
             CamusWrapper        camusWrapper,
             FileOutputCommitter committer) throws IOException, InterruptedException {
@@ -55,21 +59,21 @@ public class StringRecordWriterProvider implements RecordWriterProvider {
             )
         );
 
-        // Create a FSDataOutputStream stream that will write to path.
         final FSDataOutputStream writer = path.getFileSystem(context.getConfiguration()).create(path);
+        CompressionCodecFactory compressionCodecFactory = new CompressionCodecFactory(context.getConfiguration());
+        CompressionCodec compressionCodec = compressionCodecFactory.getCodec(path);
+        final CompressionOutputStream  compressionOutputStream = compressionCodec.createOutputStream(writer, compressionCodec.createCompressor());
 
-        // Return a new anonymous RecordWriter that uses the
-        // FSDataOutputStream writer to write bytes straight into path.
         return new RecordWriter<IEtlKey, CamusWrapper>() {
             @Override
             public void write(IEtlKey ignore, CamusWrapper data) throws IOException {
                 String record = (String)data.getRecord() + recordDelimiter;
-                writer.write(record.getBytes());
+                compressionOutputStream.write(record.getBytes());
             }
 
             @Override
             public void close(TaskAttemptContext context) throws IOException, InterruptedException {
-                writer.close();
+                compressionOutputStream.close();
             }
         };
     }
