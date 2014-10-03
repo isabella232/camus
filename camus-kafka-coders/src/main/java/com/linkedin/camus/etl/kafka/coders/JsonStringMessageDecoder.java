@@ -1,7 +1,9 @@
 package com.linkedin.camus.etl.kafka.coders;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.Properties;
 import java.text.SimpleDateFormat;
 
@@ -49,28 +51,28 @@ public class JsonStringMessageDecoder extends MessageDecoder<byte[], String> {
 	@Override
 	public CamusWrapper<String> decode(byte[] payload) {
 		long       timestamp = 0;
-		String     payloadString;
-                JSONObject jobj;
+		String     payloadString = "";
+    JSONObject jobj;
 
-		payloadString =  new String(payload);
+    try {
+      payloadString =  new String(payload, Charset.forName("UTF-8"));
 
-		// Parse the payload into a JsonObject.
-		try {
-                        jobj = (JSONObject) JSONValue.parse(payloadString);
-		} catch (RuntimeException e) {
-			log.error("Caught exception while parsing JSON string '" + payloadString + "'.");
-			throw new RuntimeException(e);
-		}
+      // Parse the payload into a JsonObject.
+      jobj = (JSONObject) JSONValue.parse(payloadString);
+    } catch (RuntimeException e) {
+      log.error("Caught exception while parsing JSON string '" + payloadString + "'.");
+      throw new RuntimeException(e);
+    }
 
-		// Attempt to read and parse the timestamp element into a long.
-		if (jobj.get(timestampField) != null) {
-			Object ts = jobj.get(timestampField);
-			if (ts instanceof String) {
-				try {
-					timestamp = new SimpleDateFormat(timestampFormat).parse((String)ts).getTime();
-				} catch (Exception e) {
-					log.error("Could not parse timestamp '" + ts + "' while decoding JSON message.");
-				}
+    // Attempt to read and parse the timestamp element into a long.
+    if (jobj.get(timestampField) != null) {
+      Object ts = jobj.get(timestampField);
+      if (ts instanceof String) {
+        try {
+          timestamp = new SimpleDateFormat(timestampFormat).parse((String)ts).getTime();
+        } catch (Exception e) {
+          log.error("Could not parse timestamp '" + ts + "' while decoding JSON message.");
+        }
 			} else if (ts instanceof Long) {
 				timestamp = (Long)ts;
 			}
