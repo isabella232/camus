@@ -19,18 +19,8 @@ public class JsonStringMessageDecoderTest {
   public void testUnicodeDecoding() {
     JsonStringMessageDecoder decoder = new JsonStringMessageDecoder();
     byte[] payload = "{data:中}".getBytes(Charset.forName("UTF-8"));
-    
     CamusWrapper<String> camusWrapper = decoder.decode(payload);
     byte[] decoded = camusWrapper.getRecord().getBytes(Charset.forName("UTF-8"));
-    for (byte b:payload) {
-      System.out.print(b + ",");
- 
-    }
-    System.out.println();
-    for (byte b:decoded) {
-      System.out.print(b + ",");
-    }
     assertArrayEquals(payload, decoded);
   }
-
 }
