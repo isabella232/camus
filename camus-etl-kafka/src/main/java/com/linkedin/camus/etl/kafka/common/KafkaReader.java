@@ -109,15 +109,20 @@ public class KafkaReader {
 			Message message = msgAndOffset.message();
 
 			ByteBuffer buf = message.payload();
-			int origSize = buf.remaining();
-			byte[] bytes = new byte[origSize];
-			buf.get(bytes, buf.position(), origSize);
-			payload.set(bytes, 0, origSize);
+			if (buf != null) {
+				int origSize = buf.remaining();
+				byte[] bytes = new byte[origSize];
+				buf.get(bytes, buf.position(), origSize);
+				payload.set(bytes, 0, origSize);
+			} else {
+				log.error("Read a null payload. key: " + key + ", pKey: " + pKey);
+				payload.set(new byte[0], 0, 0);
+			}
 
 			buf = message.key();
 			if(buf != null){
-				origSize = buf.remaining();
-				bytes = new byte[origSize];
+				int origSize = buf.remaining();
+				byte[] bytes = new byte[origSize];
 				buf.get(bytes, buf.position(), origSize);
 				pKey.set(bytes, 0, origSize);
 			}
