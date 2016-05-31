@@ -31,6 +31,8 @@ import com.linkedin.camus.etl.kafka.common.EtlKey;
 
 public class EtlMultiOutputFormat extends FileOutputFormat<EtlKey, Object> {
     public static final String ETL_DESTINATION_PATH = "etl.destination.path";
+    public static final String ETL_DESTINATION_PATH_TOPIC_DIR_OVERRIDE = "etl.destination.path.topic.dir.override";
+
     public static final String ETL_DESTINATION_PATH_TOPIC_SUBDIRECTORY = "etl.destination.path.topic.sub.dir";
     public static final String ETL_RUN_MOVE_DATA = "etl.run.move.data";
     public static final String ETL_RUN_TRACKING_POST = "etl.run.tracking.post";
@@ -112,6 +114,14 @@ public class EtlMultiOutputFormat extends FileOutputFormat<EtlKey, Object> {
 
     public static Path getDestinationPath(JobContext job) {
         return new Path(job.getConfiguration().get(ETL_DESTINATION_PATH));
+    }
+
+    public static void setDestPathTopicDirOverride(JobContext job, String topicDirOverride) {
+        job.getConfiguration().set(ETL_DESTINATION_PATH_TOPIC_DIR_OVERRIDE, topicDirOverride);
+    }
+
+    public static String getDestPathTopicDirOverride(JobContext job) {
+        return job.getConfiguration().get(ETL_DESTINATION_PATH_TOPIC_DIR_OVERRIDE);
     }
 
     public static void setDestPathTopicSubDir(JobContext job, String subPath) {

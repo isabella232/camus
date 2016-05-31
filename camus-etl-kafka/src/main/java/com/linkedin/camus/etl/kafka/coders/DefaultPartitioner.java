@@ -24,7 +24,13 @@ public class DefaultPartitioner extends Partitioner {
     @Override
     public String generatePartitionedPath(JobContext context, String topic, String brokerId, int partitionId, String encodedPartition) {
         StringBuilder sb = new StringBuilder();
-        sb.append(topic).append("/");
+
+        // If etl.destination.path.topic.dir.override is set, put all topic outputs under that
+        // dir. Otherwise, use topic name.
+        String topicOverrideDir = EtlMultiOutputFormat.getDestPathTopicDirOverride(context);
+        String topicDir = (topicOverrideDir != null) ? topicOverrideDir : topic;
+        sb.append(topicDir).append("/");
+
         sb.append(EtlMultiOutputFormat.getDestPathTopicSubDir(context)).append("/");
         DateTime bucket = new DateTime(Long.valueOf(encodedPartition));
         sb.append(bucket.toString(OUTPUT_DATE_FORMAT));
